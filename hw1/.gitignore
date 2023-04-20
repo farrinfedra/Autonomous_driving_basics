@@ -1,6 +1,0 @@
-*.ipynb
-*.ckpt
-*.txt
-wandb
-*.swp
-.gitignore
