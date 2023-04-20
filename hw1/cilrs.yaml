@@ -1,0 +1,5 @@
+model:
+  measure_module: [128, 128]
+  speed_module: [512, 128]
+  join_module:
+  control_module:

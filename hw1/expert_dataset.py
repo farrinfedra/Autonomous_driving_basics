@@ -19,6 +19,10 @@ class ExpertDataset(Dataset):
             img_path = os.path.join(image_path, file)
             json_path = os.path.join(measurements_path, file[:-3] + 'json')
             self.data.append((img_path, json_path))
+    
+    def __len__(self):
+        """Return the length of the dataset"""
+        return len(self.data)
 
     def __getitem__(self, index):
         """Return RGB images and measurements"""
@@ -38,11 +42,18 @@ class ExpertDataset(Dataset):
         img = np.array(img)
         with open(json_path, 'r') as f:
             json_data = json.load(f)
-            
-        measurements = np.array([json_data['speed'], json_data['throttle'], json_data['brake'],
-                        json_data['steer'], json_data['command']])
+        
+        #add measurements as dictionary 
+        measurements = {}
+        measurements['speed'] = np.array(json_data['speed']).astype(np.float32)
+        measurements['actions'] = np.array([json_data['throttle'], json_data['brake'], json_data['steer']]).astype(np.float32)
+        measurements['command'] = np.array(int(json_data['command']))
+
+        # measurements = np.array([json_data['speed'], json_data['throttle'], json_data['brake'],
+        #                 json_data['steer'], json_data['command']])
         # measurements = np.array([json_data['speed'], json_data['throttle'], json_data['brake'],
         #                          json_data['steer'], json_data['command'], json_data['route_dist'],
         #                          json_data['route_angle'], json_data['lane_dist'], json_data['lane_angle'],
         #                          json_data['tl_state'], json_data['tl_dist'], json_data['is_junction']])
         return img, measurements
+        
