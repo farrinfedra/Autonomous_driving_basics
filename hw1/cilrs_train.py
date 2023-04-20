@@ -9,7 +9,7 @@ from models.cilrs import CILRS
 from tqdm import tqdm
 import wandb
 
-wandb.init(project="CVAD", name="Part1-no-dropout")
+wandb.init(project="CVAD", name="Part3-with-dropout-normalized")
 
 def validate(model, dataloader, device="cuda"):
     """Validate model performance on the validation dataset"""
@@ -19,6 +19,8 @@ def validate(model, dataloader, device="cuda"):
 
     #val_loss = []
     val_avg = 0
+    count = 0
+
     with torch.no_grad():
         for i, (img, measurements) in tqdm(enumerate(dataloader), total=len(dataloader), desc="Validating"):
             # Your code here
@@ -33,8 +35,8 @@ def validate(model, dataloader, device="cuda"):
             loss = criterion(actions, gt_actions) + criterion(v_p.squeeze(1), gt_speed)
             #detach loss
             val_avg += loss.detach().item()
-            
-            wandb.log({"Validation Loss": val_avg/len(dataloader)})
+            count=+1        
+            wandb.log({"Validation Loss": val_avg/count})
 
     return val_avg/len(dataloader)
     
@@ -49,6 +51,8 @@ def train(model, dataloader, device="cuda"):
 
     #train_loss = []
     loss_avg = 0
+    count = 0
+
     for i, (img, measurements) in tqdm(enumerate(dataloader), total=len(dataloader), desc="Training"):
         # Your code here
         img = img.to(device)
@@ -65,8 +69,9 @@ def train(model, dataloader, device="cuda"):
         optimizer.step()
         #detach loss
         loss_avg += loss.detach().item()
+        count=+1
 
-        wandb.log({"Training Loss": loss_avg/len(dataloader)})
+        wandb.log({"Training Loss": loss_avg / count})
     return loss_avg/len(dataloader)
 
         

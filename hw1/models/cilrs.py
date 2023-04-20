@@ -15,6 +15,7 @@ class FullyConnectedNet(nn.Module):
             nn.Linear(self.input_dim, self.hidden_dims),
             nn.ReLU(),
             nn.Linear(self.hidden_dims, self.hidden_dims),
+            nn.Dropout(drop_p),
             nn.ReLU(),
             nn.Linear(self.hidden_dims, self.output_dim)
         )

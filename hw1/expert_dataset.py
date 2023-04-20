@@ -28,12 +28,14 @@ class ExpertDataset(Dataset):
         """Return RGB images and measurements"""
         # Your code here
         img_path, json_path = self.data[index]
-        img = Image.open(img_path).convert('RGB')
+        img = Image.open(img_path)
 
         transform = transforms.Compose([
                     transforms.Resize(256),
                     transforms.CenterCrop(224),
                     transforms.ToTensor(),
+                    transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+                                         std=[0.229, 0.224, 0.225]),
                 ])
         img = transform(img) #channel, height, width: 3, 224, 224 => 
                             #when input to model unsqueeze(0) to add batch dimension
@@ -48,12 +50,10 @@ class ExpertDataset(Dataset):
         measurements['speed'] = np.array(json_data['speed']).astype(np.float32)
         measurements['actions'] = np.array([json_data['throttle'], json_data['brake'], json_data['steer']]).astype(np.float32)
         measurements['command'] = np.array(int(json_data['command']))
-
-        # measurements = np.array([json_data['speed'], json_data['throttle'], json_data['brake'],
-        #                 json_data['steer'], json_data['command']])
-        # measurements = np.array([json_data['speed'], json_data['throttle'], json_data['brake'],
-        #                          json_data['steer'], json_data['command'], json_data['route_dist'],
-        #                          json_data['route_angle'], json_data['lane_dist'], json_data['lane_angle'],
-        #                          json_data['tl_state'], json_data['tl_dist'], json_data['is_junction']])
+        measurements['tl_state'] = np.array(int(json_data['tl_state']))
+        measurements['tl_dist'] = np.array(json_data['tl_dist']).astype(np.float32)
+        measurements['lane_dist'] = np.array(json_data['lane_dist']).astype(np.float32)
+        measurements['route_angle'] = np.array(json_data['route_angle']).astype(np.float32)
+                                                
         return img, measurements
         
