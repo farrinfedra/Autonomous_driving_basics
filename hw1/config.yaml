@@ -20,4 +20,4 @@ train:
 
 wandb:
   project: "CVAD"
-  name: "Part4-fix"
+  name: "Part4-fix-dataloader"

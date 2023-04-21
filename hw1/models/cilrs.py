@@ -53,17 +53,20 @@ class CILRS(nn.Module):
             p_i = self.image_module(img) #shape: (batch_size, 512, 1, 1)
 
         p_i = p_i.view(p_i.size(0), -1) #flatten for speed pred module #shape: (batch_size, 512)
-
+        bs = img.size(0)
 
         v = self.measured_speed_module(speed.unsqueeze(1)) #shape: (batch_size, 128)
 
         #concatenate v and p_i to shape (batch_size, 640)
-        joined = torch.cat((p_i, v), dim=1) #shape: (batch_size, 640)
+        joined = torch.cat([p_i, v], dim=1) #shape: (batch_size, 640)
         joined = self.join_module(joined) #shape: (batch_size, 512)
         v_p = self.speed_pred_module(p_i) #shape: (batch_size, 1)
         
-        action = torch.stack([self.control_module[command[i]](joined[i]) for i in range(len(command))])
-
+        #action = torch.stack([self.control_module[command[i]](joined[i]) for i in range(len(command))])
+        action = torch.zeros((bs, 3)).type(torch.FloatTensor).to(img.device)
+            
+        for i in range(bs):
+            action[i] = self.control_module[command[i]](joined[i])
         #print("action shape: ", action.shape)
         throttle, brake, steering = torch.sigmoid(action[:, 0])\
                                     , torch.sigmoid(action[:, 1]),\

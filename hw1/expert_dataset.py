@@ -2,6 +2,7 @@ from torch.utils.data import Dataset
 import os
 import json
 import numpy as np
+import torch
 from PIL import Image
 import torchvision.transforms as transforms
 
@@ -31,8 +32,7 @@ class ExpertDataset(Dataset):
         img = Image.open(img_path)
 
         transform = transforms.Compose([
-                    transforms.Resize(256),
-                    transforms.CenterCrop(224),
+                    transforms.Resize((224, 224)),
                     transforms.ToTensor(),
                     transforms.Normalize(mean=[0.485, 0.456, 0.406], 
                                          std=[0.229, 0.224, 0.225]),
@@ -47,15 +47,15 @@ class ExpertDataset(Dataset):
         
         #add measurements as dictionary 
         measurements = {}
-        measurements['speed'] = np.array(json_data['speed']).astype(np.float32)
-        measurements['throttle'] = np.array(json_data['throttle']).astype(np.float32)
-        measurements['steer'] = np.array(json_data['steer']).astype(np.float32)
-        measurements['brake'] = np.array(json_data['brake']).astype(np.float32)                                                      
-        measurements['command'] = np.array(int(json_data['command']))
-        measurements['tl_state'] = np.array(int(json_data['tl_state']))
-        measurements['tl_dist'] = np.array(json_data['tl_dist']).astype(np.float32)
-        measurements['lane_dist'] = np.array(json_data['lane_dist']).astype(np.float32)
-        measurements['route_angle'] = np.array(json_data['route_angle']).astype(np.float32)
+        measurements['speed'] = torch.Tensor(json_data['speed']).type(torch.float)
+        measurements['throttle'] = torch.Tensor(json_data['throttle']).type(torch.float)
+        measurements['steer'] = torch.Tensor(json_data['steer']).type(torch.float)
+        measurements['brake'] = torch.Tensor(json_data['brake']).type(torch.float)                                                      
+        measurements['command'] = torch.Tensor(json_data['command']).type(torch.long)
+        measurements['tl_state'] = torch.Tensor(json_data['tl_state']).type(torch.long)
+        measurements['tl_dist'] = torch.Tensor(json_data['tl_dist']).type(torch.float)
+        measurements['lane_dist'] = torch.Tensor(json_data['lane_dist']).type(torch.float)
+        measurements['route_angle'] = torch.Tensor(json_data['route_angle']).type(torch.float)
 
                                                 
         return img, measurements
