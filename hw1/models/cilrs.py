@@ -63,11 +63,13 @@ class CILRS(nn.Module):
         v_p = self.speed_pred_module(p_i) #shape: (batch_size, 1)
         
         action = torch.stack([self.control_module[command[i]](joined[i]) for i in range(len(command))])
+
+        #print("action shape: ", action.shape)
         throttle, brake, steering = torch.sigmoid(action[:, 0])\
                                     , torch.sigmoid(action[:, 1]),\
                                     torch.tanh(action[:, 2])
-        action = torch.stack((throttle, brake, steering), dim=1)
-
+        
+        action = {'throttle': throttle, 'brake': brake, 'steer': steering}
 
         return v_p, action
 

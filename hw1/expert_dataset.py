@@ -48,12 +48,15 @@ class ExpertDataset(Dataset):
         #add measurements as dictionary 
         measurements = {}
         measurements['speed'] = np.array(json_data['speed']).astype(np.float32)
-        measurements['actions'] = np.array([json_data['throttle'], json_data['brake'], json_data['steer']]).astype(np.float32)
+        measurements['throttle'] = np.array(json_data['throttle']).astype(np.float32)
+        measurements['steer'] = np.array(json_data['steer']).astype(np.float32)
+        measurements['brake'] = np.array(json_data['brake']).astype(np.float32)                                                      
         measurements['command'] = np.array(int(json_data['command']))
         measurements['tl_state'] = np.array(int(json_data['tl_state']))
         measurements['tl_dist'] = np.array(json_data['tl_dist']).astype(np.float32)
         measurements['lane_dist'] = np.array(json_data['lane_dist']).astype(np.float32)
         measurements['route_angle'] = np.array(json_data['route_angle']).astype(np.float32)
+
                                                 
         return img, measurements
         
