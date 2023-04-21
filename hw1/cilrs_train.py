@@ -16,6 +16,7 @@ global_step = 0
 
 def calculate_loss(cfg, v_p, actions, gt_speed, gt_actions, split='train'):
         """Calculate loss"""
+      
         criterion = torch.nn.L1Loss()
         speed_loss = cfg.speed_weight * criterion(v_p.squeeze(1), gt_speed)
         brake_loss = cfg.brake_weight * criterion(actions['brake'], gt_actions['brake'])
@@ -49,7 +50,6 @@ def validate(model, dataloader, config, device="cuda"):
 
     with torch.no_grad():
         for i, (img, measurements) in tqdm(enumerate(dataloader), total=len(dataloader), desc="Validating"):
-            # Your code here
             img = img.to(device)
             gt_speed = measurements['speed'].to(device)
             gt_actions = {'brake': measurements['brake'].to(device),
@@ -57,13 +57,14 @@ def validate(model, dataloader, config, device="cuda"):
                       'steer': measurements['steer'].to(device)}
             command = measurements['command'].to(device)
 
+            
 
             #print(img.shape, gt_speed.shape, gt_actions.shape)
             v_p, actions = model(img, gt_speed, command)
             loss = calculate_loss(config.train, v_p, actions, gt_speed, gt_actions, split='val')
             #detach loss
             val_avg += loss.item()
-            count=+1        
+            count +=1        
 
     return val_avg/count
     
@@ -98,9 +99,8 @@ def train(model, dataloader, optimizer, config, device="cuda"):
         optimizer.step()
 
         loss_avg += loss.item()
-        count=+1
+        count +=1
         global_step += 1
-
     return loss_avg/count
 
         

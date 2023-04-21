@@ -39,7 +39,7 @@ class CILRS(nn.Module):
         self.image_module = nn.Sequential(*list(self.image_module.children())[:-1])
 
         self.measured_speed_module = FullyConnectedNet(1, 128, 128, 3)
-        self.speed_pred_module = FullyConnectedNet(512, 1, 128, 3)
+        self.speed_pred_module = FullyConnectedNet(512, 1, 256, 3)
         self.join_module = nn.Linear(640, 512)
         #create 4 fully connected layers for control
         self.control_module = nn.ModuleList(FullyConnectedNet(512, 3, 256, 3) for _ in range(4))
@@ -68,7 +68,7 @@ class CILRS(nn.Module):
         throttle, brake, steering = torch.sigmoid(action[:, 0])\
                                     , torch.sigmoid(action[:, 1]),\
                                     torch.tanh(action[:, 2])
-        
+
         action = {'throttle': throttle, 'brake': brake, 'steer': steering}
 
         return v_p, action

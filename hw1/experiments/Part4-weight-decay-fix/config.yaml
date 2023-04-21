@@ -25,7 +25,7 @@ train:
   brake_weight: 1.0
   steer_weight: 1.0
   optimizer: Adam
-  use_wandb: true
+  use_wandb: false
 wandb:
   project: CVAD
   name: Part4-weight-decay-fix
