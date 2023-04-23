@@ -1,4 +1,4 @@
-# Autonomous_driving_basics
+# Autonomous Driving Basics (Course: 423)
 
 ### Assignment 1
 This repository is an implementation for CILRS and Conditional Affordance Learning. The final report contains all necessary information about the architecture, training and resutls.
