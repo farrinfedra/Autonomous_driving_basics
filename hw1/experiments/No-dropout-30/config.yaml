@@ -1,0 +1,31 @@
+model:
+  measure_module:
+  - 1
+  - 128
+  - 128
+  speed_module:
+  - 512
+  - 128
+  - 1
+  join_module:
+  - 640
+  - 512
+  control_module:
+  - 512
+  - 256
+  - 3
+train:
+  data_path: /userfiles/ssafadoust20/expert_data
+  num_epochs: 30
+  batch_size: 128
+  lr: 0.0002
+  weight_decay: 0.0001
+  num_workers: 10
+  speed_weight: 0.5
+  brake_weight: 1.0
+  steer_weight: 1.0
+  optimizer: Adam
+  use_wandb: true
+wandb:
+  project: CVAD
+  name: No-dropout-30
