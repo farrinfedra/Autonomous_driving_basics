@@ -4,18 +4,18 @@ import torch
 import torch.nn.functional as F
 
 class FullyConnectedNet(nn.Module):
-    def __init__(self, input_dim, output_dim, hidden_dims, num_layers = 3 ,drop_p=0.5):
+    def __init__(self, input_dim, output_dim, hidden_dims, drop_p=0.0):
         super(FullyConnectedNet, self).__init__()
 
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.hidden_dims = hidden_dims
-
+        self.drop_p = drop_p
         self.fcs = nn.Sequential(
             nn.Linear(self.input_dim, self.hidden_dims),
             nn.ReLU(),
             nn.Linear(self.hidden_dims, self.hidden_dims),
-            nn.Dropout(drop_p),
+            nn.Dropout(self.drop_p),
             nn.ReLU(),
             nn.Linear(self.hidden_dims, self.output_dim)
         )
@@ -31,18 +31,18 @@ class CILRS(nn.Module):
         super(CILRS, self).__init__()
         # create image module as resnet18 using pytorch
         self.image_module = models.resnet18(pretrained=True)
-        for param in self.image_module.parameters():
-            param.requires_grad = False
+        # for param in self.image_module.parameters():
+        #     param.requires_grad = False
 
-        self.image_module.eval()
+        # self.image_module.eval()
 
         self.image_module = nn.Sequential(*list(self.image_module.children())[:-1])
 
-        self.measured_speed_module = FullyConnectedNet(1, 128, 128, 3)
-        self.speed_pred_module = FullyConnectedNet(512, 1, 256, 3)
+        self.measured_speed_module = FullyConnectedNet(1, 128, 128)
+        self.speed_pred_module = FullyConnectedNet(512, 1, 256)
         self.join_module = nn.Linear(640, 512)
         #create 4 fully connected layers for control
-        self.control_module = nn.ModuleList(FullyConnectedNet(512, 3, 256, 3) for _ in range(4))
+        self.control_module = nn.ModuleList([FullyConnectedNet(512, 3, 256) for _ in range(4)])
          #FullyConnectedNet(512, 1, 128, 3)
 
 
@@ -68,13 +68,17 @@ class CILRS(nn.Module):
         for i in range(bs):
             action[i] = self.control_module[command[i]](joined[i])
         #print("action shape: ", action.shape)
-        throttle, brake, steering = torch.sigmoid(action[:, 0])\
-                                    , torch.sigmoid(action[:, 1]),\
-                                    torch.tanh(action[:, 2])
+        # throttle, brake, steering = torch.sigmoid(action[:, 0])\
+        #                             , torch.sigmoid(action[:, 1]),\
+        #                             torch.tanh(action[:, 2])
 
-        action = {'throttle': throttle, 'brake': brake, 'steer': steering}
+        throttle = torch.sigmoid(action[:, 0])
+        steering = torch.tanh(action[:, 1])
+        brake = torch.sigmoid(action[:, 2])
 
-        return v_p, action
+        #action = {'throttle': throttle, 'brake': brake, 'steer': steering}
+
+        return v_p, throttle, brake, steering
 
 
 

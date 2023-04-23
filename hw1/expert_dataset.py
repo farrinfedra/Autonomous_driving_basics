@@ -4,6 +4,7 @@ import json
 import numpy as np
 import torch
 from PIL import Image
+import cv2
 import torchvision.transforms as transforms
 
 class ExpertDataset(Dataset):
@@ -29,33 +30,35 @@ class ExpertDataset(Dataset):
         """Return RGB images and measurements"""
         # Your code here
         img_path, json_path = self.data[index]
-        img = Image.open(img_path)
+        img = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)
+        
 
         transform = transforms.Compose([
-                    transforms.Resize((224, 224)),
                     transforms.ToTensor(),
+                    transforms.Resize((224, 224)),
                     transforms.Normalize(mean=[0.485, 0.456, 0.406], 
                                          std=[0.229, 0.224, 0.225]),
                 ])
-        img = transform(img) #channel, height, width: 3, 224, 224 => 
+        img = transform(img)
+         #channel, height, width: 3, 224, 224 => 
                             #when input to model unsqueeze(0) to add batch dimension
 
         #convert to numpy array
-        img = np.array(img)
+
         with open(json_path, 'r') as f:
             json_data = json.load(f)
         
         #add measurements as dictionary 
         measurements = {}
-        measurements['speed'] = torch.Tensor(json_data['speed']).type(torch.float)
-        measurements['throttle'] = torch.Tensor(json_data['throttle']).type(torch.float)
-        measurements['steer'] = torch.Tensor(json_data['steer']).type(torch.float)
-        measurements['brake'] = torch.Tensor(json_data['brake']).type(torch.float)                                                      
-        measurements['command'] = torch.Tensor(json_data['command']).type(torch.long)
-        measurements['tl_state'] = torch.Tensor(json_data['tl_state']).type(torch.long)
-        measurements['tl_dist'] = torch.Tensor(json_data['tl_dist']).type(torch.float)
-        measurements['lane_dist'] = torch.Tensor(json_data['lane_dist']).type(torch.float)
-        measurements['route_angle'] = torch.Tensor(json_data['route_angle']).type(torch.float)
+        measurements['speed'] = torch.tensor(json_data['speed'], dtype=torch.float)
+        measurements['throttle'] = torch.tensor(json_data['throttle'], dtype=torch.float)
+        measurements['steer'] = torch.tensor(json_data['steer'], dtype=torch.float)
+        measurements['brake'] = torch.tensor(json_data['brake'], dtype=torch.float)                                                      
+        measurements['command'] = torch.tensor(json_data['command'], dtype=torch.long)
+        measurements['tl_state'] = torch.tensor(json_data['tl_state'], dtype=torch.long)
+        measurements['tl_dist'] = torch.tensor(json_data['tl_dist'], dtype=torch.float)
+        measurements['lane_dist'] = torch.tensor(json_data['lane_dist'], dtype=torch.float)
+        measurements['route_angle'] = torch.tensor(json_data['route_angle'], dtype=torch.float)
 
                                                 
         return img, measurements

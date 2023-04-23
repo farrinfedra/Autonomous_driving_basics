@@ -10,18 +10,21 @@ from models.cilrs import CILRS
 
 from tqdm import tqdm
 import wandb
+import random
+import pytorch_lightning as pl
+from datetime import datetime
 
 global global_step
 global_step = 0
 
-def calculate_loss(cfg, v_p, actions, gt_speed, gt_actions, split='train'):
+def calculate_loss(cfg, v_p, throttle, brake, steering, gt_speed, gt_actions, criterion, split='train'):
         """Calculate loss"""
       
-        criterion = torch.nn.L1Loss()
         speed_loss = cfg.speed_weight * criterion(v_p.squeeze(1), gt_speed)
-        brake_loss = cfg.brake_weight * criterion(actions['brake'], gt_actions['brake'])
-        steer_loss = cfg.steer_weight * criterion(actions['steer'], gt_actions['steer'])
-        throttle_loss = criterion(actions['throttle'], gt_actions['throttle'])
+        brake_loss = cfg.brake_weight * criterion(brake, gt_actions['brake'])
+        steer_loss = cfg.steer_weight * criterion(steering, gt_actions['steer'])
+        throttle_loss = criterion(throttle, gt_actions['throttle'])
+
 
         action_loss = brake_loss + steer_loss + throttle_loss
         total = speed_loss + action_loss
@@ -38,7 +41,7 @@ def calculate_loss(cfg, v_p, actions, gt_speed, gt_actions, split='train'):
                 })
         return total
 
-def validate(model, dataloader, config, device="cuda"):
+def validate(model, dataloader, criterion, config, device="cuda"):
     """Validate model performance on the validation dataset"""
     # Your code here
      #better in paper
@@ -57,11 +60,9 @@ def validate(model, dataloader, config, device="cuda"):
                       'steer': measurements['steer'].to(device)}
             command = measurements['command'].to(device)
 
-            
-
             #print(img.shape, gt_speed.shape, gt_actions.shape)
-            v_p, actions = model(img, gt_speed, command)
-            loss = calculate_loss(config.train, v_p, actions, gt_speed, gt_actions, split='val')
+            v_p, throttle, brake, steering  = model(img, gt_speed, command)
+            loss = calculate_loss(config.train, v_p, throttle, brake, steering, gt_speed, gt_actions, criterion, split='val')
             #detach loss
             val_avg += loss.item()
             count +=1        
@@ -71,7 +72,7 @@ def validate(model, dataloader, config, device="cuda"):
 
 
 
-def train(model, dataloader, optimizer, config, device="cuda"):
+def train(model, dataloader, optimizer, criterion, config, device="cuda"):
     """Train model on the training dataset for one epoch"""
     # Your code here
     global global_step
@@ -93,14 +94,15 @@ def train(model, dataloader, optimizer, config, device="cuda"):
         command = measurements['command'].to(device)
 
         optimizer.zero_grad()
-        v_p, actions = model(img, gt_speed, command)
-        loss = calculate_loss(config.train, v_p, actions, gt_speed, gt_actions)
+        v_p, throttle, brake, steering  = model(img, gt_speed, command)
+        loss = calculate_loss(config.train, v_p, throttle, brake, steering, gt_speed, gt_actions, criterion)
         loss.backward()
         optimizer.step()
 
         loss_avg += loss.item()
         count +=1
         global_step += 1
+
     return loss_avg/count
 
         
@@ -146,6 +148,11 @@ def main():
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device: {}".format(device))
+    
+    random.seed(datetime.now())
+    GLOBAL_ID = random.randint(0, 1000000000)
+
+    pl.seed_everything(2000)
 
     model = CILRS().to(device)
     train_dataset = ExpertDataset(train_root)
@@ -172,15 +179,18 @@ def main():
                                 pin_memory=True)
 
     if config.train.optimizer == "Adam":
-        optimizer = torch.optim.Adam(model.parameters(), lr=config.train.lr, weight_decay=config.train.weight_decay)
+        optimizer = torch.optim.Adam(model.parameters(), 
+                                     lr=config.train.lr, 
+                                     weight_decay=config.train.weight_decay)
 
+    criterion = torch.nn.L1Loss().to(device)
     train_losses = []
     val_losses = []
 
     for i in range(num_epochs):
         print("Epoch: {}".format(i))
-        train_lss = train(model, train_loader, optimizer, config, device)
-        val_lss = validate(model, val_loader, config, device)
+        train_lss = train(model, train_loader, optimizer, criterion, config, device)
+        val_lss = validate(model, val_loader, criterion, config, device)
 
         train_losses.append(train_lss)
         val_losses.append(val_lss)

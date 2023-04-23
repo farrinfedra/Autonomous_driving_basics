@@ -3,7 +3,8 @@ import os
 import yaml
 
 from carla_env.env import Env
-
+import torch
+from torchvision.transforms import ToTensor, Resize, Compose, Normalize
 
 class Evaluator():
     def __init__(self, env, config):
@@ -13,11 +14,33 @@ class Evaluator():
 
     def load_agent():
         # Your code here
-        pass
+        path = 'experiments/cilrs_model.ckpt'
+        model = torch.load(path)
+        model.eval()
 
     def generate_action(rgb, command, speed):
         # Your code here
-        pass
+        device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+        transforms = Compose([
+            ToTensor(),
+            Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            Resize((224, 224))
+        ])
+
+        image = transforms(rgb).unsqueeze(0).to(device)
+        speed = torch.tensor(speed).type(torch.float).unsqueeze(0).to(device)
+        command = torch.tensor(command).type(torch.long).unsqueeze(0).to(device)
+
+        with torch.no_grad():
+            throttle, steer, brake, _ = self.agent(image, speed, command)
+            throttle = float(throttle.squeeze().cpu().numpy())
+            steer=float(steer.squeeze().cpu().numpy())
+            brake= float(brake.squeeze().cpu().numpy())
+
+        if brake < 0.01:
+            brake = 0.0
+    
+        return throttle, steer, brake
 
     def take_step(self, state):
         rgb = state["rgb"]
