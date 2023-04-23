@@ -13,7 +13,7 @@ import wandb
 import random
 import pytorch_lightning as pl
 from datetime import datetime
-
+import numpy as np
 global global_step
 global_step = 0
 
@@ -31,13 +31,13 @@ def calculate_loss(cfg, v_p, throttle, brake, steering, gt_speed, gt_actions, cr
         
         if cfg.use_wandb:
             wandb.log({
-                    'global_step': global_step,
-                    f'{split}/loss_step': total.item(),
-                    f'{split}/throttle_loss_step': throttle_loss.item(),
-                    f'{split}/steer_loss_step': steer_loss.item(),
-                    f'{split}/brake_loss_step': brake_loss.item(),
-                    f'{split}/speed_loss_step': speed_loss.item(),
-                    f'{split}/action_loss_step': action_loss.item()
+                    'global': global_step,
+                    f'{split}/loss': total.item(),
+                    f'{split}/throttle_loss': throttle_loss.item(),
+                    f'{split}/steer_loss': steer_loss.item(),
+                    f'{split}/brake_loss': brake_loss.item(),
+                    f'{split}/speed_loss': speed_loss.item(),
+                    f'{split}/action_loss': action_loss.item()
                 })
         return total
 
@@ -52,7 +52,7 @@ def validate(model, dataloader, criterion, config, device="cuda"):
     count = 0
 
     with torch.no_grad():
-        for i, (img, measurements) in tqdm(enumerate(dataloader), total=len(dataloader), desc="Validating"):
+        for img, measurements in tqdm((dataloader), total=len(dataloader), desc="Validating"):
             img = img.to(device)
             gt_speed = measurements['speed'].to(device)
             gt_actions = {'brake': measurements['brake'].to(device),
@@ -84,7 +84,7 @@ def train(model, dataloader, optimizer, criterion, config, device="cuda"):
     count = 0
     
 
-    for i, (img, measurements) in tqdm(enumerate(dataloader), total=len(dataloader), desc="Training"):
+    for img, measurements in tqdm((dataloader), total=len(dataloader), desc="Training"):
         # Your code here
         img = img.to(device)
         gt_speed = measurements['speed'].to(device)
@@ -109,23 +109,40 @@ def train(model, dataloader, optimizer, criterion, config, device="cuda"):
 
 def plot_losses(train_loss, val_loss, epochs, save_path):
     """Visualize your plots and save them for your report."""
-    # plot loss such that x-axis is the number of iterations and y-axis is the loss
-    # Your code here
     x = range(1, epochs+1)
     plt.plot(x, train_loss, label="train loss")
     plt.plot(x, val_loss, label="val loss")
     plt.legend()
-    plt.xlabel("epochs")
+    plt.xlabel("Epochs")
     plt.ylabel("loss")
     plt.savefig(os.path.join(save_path, f"cilrs_loss_{epochs}.png"))
 
+def plot_losses_serperate(train_loss, val_loss, save_path):
+    """Visualize your plots and save them for your report."""
+    # Your code here
 
+    plt.figure(figsize=(7, 5))
+    plt.grid()
+    plt.plot(np.arange(len(train_loss)), train_loss)
+    plt.title('Training Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('L1')
+    plt.savefig(os.path.join(save_path, f'CIRLS_noDrop_30_train_loss_sep.png'))
+    plt.figure(figsize=(7, 5))
+    plt.grid()
+    plt.plot(np.arange(len(val_loss)), val_loss)
+    plt.title('Validation Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('L1')
+    plt.savefig(os.path.join(save_path, f'CIRLS_noDrop_30_val_loss_sep.png'))
 
 
 
 def main():
     # Change these paths to the correct paths in your downloaded expert dataset
-
+    random.seed(datetime.now())
+    pl.seed_everything(2000)
+    
     config = omegaconf.OmegaConf.load("config.yaml")
     os.makedirs("experiments", exist_ok=True)
     save_path = os.path.join("experiments", config.wandb.name)
@@ -149,10 +166,7 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device: {}".format(device))
     
-    random.seed(datetime.now())
-    GLOBAL_ID = random.randint(0, 1000000000)
-
-    pl.seed_everything(2000)
+    
 
     model = CILRS().to(device)
     train_dataset = ExpertDataset(train_root)
@@ -203,6 +217,7 @@ def main():
                     'val/loss_epoch': val_lss
                 })
     plot_losses(train_losses, val_losses, num_epochs, plots_path)
+    plot_losses_serperate(train_losses, val_losses, save_path)
     torch.save(model, os.path.join(weights_path, f"cilrs_model_full_{num_epochs}.ckpt"))
 
     if config.train.use_wandb:

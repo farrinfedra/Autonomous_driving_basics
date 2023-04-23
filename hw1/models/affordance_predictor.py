@@ -45,7 +45,7 @@ class TaskBlock(nn.Module):
 
 class AffordancePredictor(nn.Module):
     """Afforance prediction network that takes images as input"""
-    def __init__(self, input_dim=512, hidden_dim=64, dropout_p=0.5):
+    def __init__(self, input_dim=512, hidden_dim=128, dropout_p=0.5):
         super().__init__()
         #super(AffordancePredictor, self).__init__()
         self.image_module = models.resnet18(pretrained=True)
@@ -83,7 +83,7 @@ class AffordancePredictor(nn.Module):
         self.tl_state_module = TaskBlock(
             input_dim=input_dim,
             hidden_dim=hidden_dim,
-            output_dim=2,
+            output_dim=1,
             dropout=dropout_p,
             conditional=False,
         )
@@ -100,6 +100,9 @@ class AffordancePredictor(nn.Module):
         #process the non-conditional ones
         tl_dist = self.tl_dist_module(p_i)
         tl_state = self.tl_state_module(p_i)
+
+        #apply sigmoid to tl_state
+        # tl_state = F.sigmoid(tl_state)
 
         return lane_dist.squeeze(), route_angle.squeeze(), tl_dist.squeeze(), tl_state.squeeze()
 
